@@ -1,4 +1,3 @@
-```markdown
 # PrintBotAIAgents-AutoGen
 
 This project demonstrates a real-time chat application using Flask, Socket.IO, and AutoGen to create an AI-powered product assistant. The assistant helps users find and configure print products by interacting with a remote API.
@@ -15,7 +14,7 @@ This project demonstrates a real-time chat application using Flask, Socket.IO, a
 
 ## Prerequisites
 
--   Python 3.7+
+-   Python 3.11+
 -   pip
 -   An OpenAI API key
 -   A Cloudprinter API key
@@ -25,7 +24,7 @@ This project demonstrates a real-time chat application using Flask, Socket.IO, a
 1.  **Clone the repository:**
 
     ```bash
-    git clone [repository_url]
+    git clone https://github.com/faizrazadec/PrintBotAIAgents-AutoGen.git
     cd PrintBotAIAgents-AutoGen/src
     ```
 
@@ -76,6 +75,9 @@ PrintBotAIAgents-AutoGen/
 │   ├── logger.py          # Logger setup.
 │   ├── templates/
 │   │   └── index.html     # HTML template for the chat interface.
+│   ├── static/
+│   │   └── user.png
+│   │   └── agent.png
 │   ├── .env               # Environment variables.
 │   └── requirements.txt   # Project dependencies.
 └── README.md
@@ -106,7 +108,10 @@ PrintBotAIAgents-AutoGen/
 
 Contributions are welcome! Please feel free to submit a pull request or open an issue.
 
-## License
+---
 
-This project is licensed under the [MIT License](LICENSE).
-```
+### ⭐ **Support This Project!**  
+If you found this useful, **please consider leaving a star ⭐ on GitHub**!  
+It motivates me to keep building more **open-source tools** 🚀  
+
+---
