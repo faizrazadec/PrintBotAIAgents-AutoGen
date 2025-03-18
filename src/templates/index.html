@@ -1,163 +1,12 @@
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CloudPrinter Quotation Generation</title>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"> 
-
-    </script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 20px;
-        }
-        #chat-container {
-            width: 400px;
-            margin: auto;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background-color: #fff;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            padding: 10px;
-        }
-        #header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        #messages {
-            height: 300px;
-            overflow-y: scroll;
-            border: 1px solid #eee;
-            margin-bottom: 10px;
-            padding: 5px;
-            background-color: #fafafa;
-        }
-        .message {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .message img {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            margin-right: 10px;
-        }
-        .user-message {
-            justify-content: flex-end;
-        }
-        .bot-message {
-            justify-content: flex-start;
-        }
-        .bot-response {
-            background-color: #e0f7fa;
-            padding: 8px;
-            border-radius: 5px;
-            max-width: 80%;
-        }
-        .user-response {
-            background-color: #c8e6c9;
-            padding: 8px;
-            border-radius: 5px;
-            max-width: 80%;
-        }
-        #input-container {
-            display: flex;
-            margin-top: 10px;
-        }
-        #user-input {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        #send-button {
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            background-color: #007bff;
-            color: white;
-            cursor: pointer;
-        }
-        #send-button:hover {
-            background-color: #0056b3;
-        }
-    </style>
-</head>
-<body>
-    <div id="header">
-        <h1>CloudPrinter Quotation Generation</h1>
-    </div>
-    <div id="chat-container">
-        <div id="messages"></div>
-        <div id="input-container">
-            <input type="text" id="user-input" placeholder="Type a message..." />
-            <button id="send-button">Send</button>
-        </div>
-    </div>
-    <script>
-        // Initialize the chat with a welcome message
-        window.onload = () => {
-            addMessage("What can I help you with today?", "bot");
-        };
- 
-        document.getElementById('send-button').onclick = async () => {
-            await sendMessage();
-        };
- 
-        document.getElementById('user-input').addEventListener('keydown', async (event) => {
-            if (event.key === 'Enter') {
-                event.preventDefault(); // Prevents the default action of the Enter key
-                await sendMessage();
-            }
-        });
- 
-        async function sendMessage() {
-            const userInput = document.getElementById('user-input').value;
-            if (userInput.trim() === "") return; // Prevent empty messages
-            addMessage(userInput, "user");
- 
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: userInput })
-            });
-            const data = await response.json();
-            addMessage(data.response, "bot");
-            document.getElementById('user-input').value = '';
-        }
- 
-        function addMessage(message, sender) {
-            const messagesDiv = document.getElementById('messages');
-            const messageDiv = document.createElement('div');
-            messageDiv.classList.add('message', `${sender}-message`);
- 
-            const img = document.createElement('img');
-            img.src = sender === 'user' ? 'user.png' : 'agent.png'; // Updated paths
-            messageDiv.appendChild(img);
- 
-            const textDiv = document.createElement('div');
-            textDiv.classList.add(sender === 'user' ? 'user-response' : 'bot-response');
-            textDiv.innerText = message;
-            messageDiv.appendChild(textDiv);
- 
-            messagesDiv.appendChild(messageDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll to the bottom
-        }
-    </script>
-</body>
-</html> -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CloudPrinter Quotation Generation</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <!-- Include marked.js for Markdown rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/5.1.1/marked.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -250,61 +99,59 @@
         </div>
     </div>
     <script>
-        var socket = io.connect('http://localhost:5000');
-
-        socket.on("agent_message", function(data) {
-            const newDiv = document.createElement('div');
-            newDiv.textContent = data.sender + ": " + data.content;
-            document.getElementById('result').appendChild(newDiv)
-        });
+        // Connect to the Socket.IO server
+        const socket = io();
 
         // Initialize the chat with a welcome message
         window.onload = () => {
             addMessage("What can I help you with today?", "bot");
         };
 
-        document.getElementById('send-button').onclick = async () => {
-            await sendMessage();
+        // Handle incoming messages from the server
+        socket.on('message', function(data) {
+            addMessage(data.content, data.sender === 'the_human' ? 'user' : 'bot');
+        });
+
+        // Send a message to the server
+        document.getElementById('send-button').onclick = function() {
+            const input = document.getElementById('user-input');
+            const message = input.value.trim();
+            if (message) {
+                socket.emit('user_message', { message: message }); // Send message to server
+                input.value = ''; // Clear the input field
+            }
         };
 
-        document.getElementById('user-input').addEventListener('keydown', async (event) => {
+        // Allow sending messages by pressing Enter
+        document.getElementById('user-input').addEventListener('keydown', function(event) {
             if (event.key === 'Enter') {
-                event.preventDefault(); // Prevents the default action of the Enter key
-                await sendMessage();
+                event.preventDefault(); // Prevent form submission
+                document.getElementById('send-button').click(); // Trigger the send button click
             }
         });
 
-        async function sendMessage() {
-            const userInput = document.getElementById('user-input').value;
-            if (userInput.trim() === "") return; // Prevent empty messages
-            addMessage(userInput, "user");
-
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: userInput })
-            });
-            const data = await response.json();
-            addMessage(data.response, "bot"); // remove this line, the message will be handled by socket io.
-            document.getElementById('user-input').value = '';
-        }
-
+        // Function to add a message to the chat window
         function addMessage(message, sender) {
             const messagesDiv = document.getElementById('messages');
             const messageDiv = document.createElement('div');
             messageDiv.classList.add('message', `${sender}-message`);
 
+            // Add sender avatar
             const img = document.createElement('img');
-            img.src = sender === 'user' ? 'user.png' : 'agent.png'; // Updated paths
+            img.src = sender === 'user' ? 'static/user.png' : 'static/agent.png'; // Updated paths
             messageDiv.appendChild(img);
 
+            // Add message content (rendered as HTML from Markdown)
             const textDiv = document.createElement('div');
             textDiv.classList.add(sender === 'user' ? 'user-response' : 'bot-response');
-            textDiv.innerText = message;
+            textDiv.innerHTML = marked.parse(message); // Convert Markdown to HTML
             messageDiv.appendChild(textDiv);
 
+            // Append the message to the chat window
             messagesDiv.appendChild(messageDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll to the bottom
+
+            // Auto-scroll to the bottom
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
     </script>
 </body>

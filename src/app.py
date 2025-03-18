@@ -3,13 +3,30 @@
 import os
 from typing import Union, Any
 
-from flask import Flask, render_template
-from flask_socketio import SocketIO, emit
-from autogen import ConversableAgent, register_function, GroupChatManager, GroupChat
+from flask import (
+    Flask, 
+    render_template
+)
+from flask_socketio import (
+    SocketIO,
+    emit
+)
+from autogen import (
+    ConversableAgent,
+    register_function,
+    GroupChatManager,
+    GroupChat
+)
 from dotenv import load_dotenv
 
-from prompts import assistant_prompt, manager_prompt
-from functions import filter_products_by_category, get_product_info_by_reference
+from prompts import (
+    assistant_prompt,
+    manager_prompt
+)
+from functions import (
+    filter_products_by_category,
+    get_product_info_by_reference
+)
 from logger import setup_logger
 
 load_dotenv()
@@ -39,7 +56,7 @@ llm_config_turbo = {
     "config_list": [
         {
             "api_type": "openai",
-            "model": "gpt-4-turbo",
+            "model": "gpt-4o-mini",
             "api_key": os.environ["OPENAI_API_KEY"],
         }
     ],
@@ -58,8 +75,7 @@ llm_config = {
 executor_agent = ConversableAgent(
     name="executor_agent",
     human_input_mode="NEVER",
-    system_message="You are the executor agent. Your role is to execute"
-        "function calls and provide the results to the assistant agent.",
+    system_message="You are the executor agent. Your role is to execute function calls and provide the results to the assistant agent.",
 )
 
 assistant = ConversableAgent(
@@ -74,16 +90,14 @@ register_function(
     filter_products_by_category,
     caller=assistant,
     executor=executor_agent,
-    description="Fetches products based on the given category"
-        "name and returned to the assistant agent.",
+    description="Fetches products based on the given category name and returned to the assistant agent.",
 )
 
 register_function(
     get_product_info_by_reference,
     caller=assistant,
     executor=executor_agent,
-    description="Gets detailed information about a product"
-        "using its reference and return to the assistant agent.",
+    description="Gets detailed information about a product using its reference and return to the assistant agent.",
 )
 
 the_human = ConversableAgent(
