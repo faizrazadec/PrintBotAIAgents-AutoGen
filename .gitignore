@@ -2,7 +2,6 @@
 **/.cache
 .venv
 srcww
-templates
+reserve/templates
 .env
-reserve
 src/main.py
