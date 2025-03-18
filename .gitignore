@@ -4,13 +4,5 @@
 srcww
 templates
 .env
-embeddings.py
-app.py
-functions.py
-mugees.py
-prompts.py
-tess.py
-tools.py
-tester.py
-main.py
+reserve
 src/main.py
