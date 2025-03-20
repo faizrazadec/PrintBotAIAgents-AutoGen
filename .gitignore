@@ -6,3 +6,5 @@ srccc/templates
 .env
 src/main.py
 srccc
+*.json
+test.py

@@ -5,39 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CloudPrinter Quotation Generation</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
-    <!-- Include marked.js for Markdown rendering -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/5.1.1/marked.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f4;
             margin: 0;
-            padding: 20px;
-        }
-        #chat-container {
-            width: 400px;
-            margin: auto;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background-color: #fff;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            padding: 10px;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
         }
         #header {
             text-align: center;
-            margin-bottom: 20px;
+            background-color: #007bff;
+            color: white;
+            padding: 15px;
+            font-size: 1.5rem;
+        }
+        #chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            max-width: 800px;
+            margin: auto;
+            width: 100%;
+            height: 100%;
+            padding: 10px;
         }
         #messages {
-            height: 300px;
-            overflow-y: scroll;
-            border: 1px solid #eee;
-            margin-bottom: 10px;
-            padding: 5px;
-            background-color: #fafafa;
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 5px;
         }
         .message {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             margin-bottom: 10px;
         }
         .message img {
@@ -52,21 +59,24 @@
         .bot-message {
             justify-content: flex-start;
         }
+        .bot-response, .user-response {
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 75%;
+            word-wrap: break-word;
+        }
         .bot-response {
             background-color: #e0f7fa;
-            padding: 8px;
-            border-radius: 5px;
-            max-width: 80%;
         }
         .user-response {
             background-color: #c8e6c9;
-            padding: 8px;
-            border-radius: 5px;
-            max-width: 80%;
+            align-self: flex-end;
         }
         #input-container {
             display: flex;
-            margin-top: 10px;
+            padding: 10px;
+            background-color: white;
+            border-top: 1px solid #ccc;
         }
         #user-input {
             flex: 1;
@@ -75,7 +85,8 @@
             border-radius: 5px;
         }
         #send-button {
-            padding: 10px;
+            padding: 10px 15px;
+            margin-left: 10px;
             border: none;
             border-radius: 5px;
             background-color: #007bff;
@@ -88,9 +99,7 @@
     </style>
 </head>
 <body>
-    <div id="header">
-        <h1>CloudPrinter Quotation Generation</h1>
-    </div>
+    <div id="header">CloudPrinter Quotation Generation</div>
     <div id="chat-container">
         <div id="messages"></div>
         <div id="input-container">
@@ -99,58 +108,47 @@
         </div>
     </div>
     <script>
-        // Connect to the Socket.IO server
         const socket = io();
 
-        // Initialize the chat with a welcome message
         window.onload = () => {
             addMessage("What can I help you with today?", "bot");
         };
 
-        // Handle incoming messages from the server
         socket.on('message', function(data) {
             addMessage(data.content, data.sender === 'the_human' ? 'user' : 'bot');
         });
 
-        // Send a message to the server
         document.getElementById('send-button').onclick = function() {
             const input = document.getElementById('user-input');
             const message = input.value.trim();
             if (message) {
-                socket.emit('user_message', { message: message }); // Send message to server
-                input.value = ''; // Clear the input field
+                socket.emit('user_message', { message: message });
+                input.value = '';
             }
         };
 
-        // Allow sending messages by pressing Enter
         document.getElementById('user-input').addEventListener('keydown', function(event) {
             if (event.key === 'Enter') {
-                event.preventDefault(); // Prevent form submission
-                document.getElementById('send-button').click(); // Trigger the send button click
+                event.preventDefault();
+                document.getElementById('send-button').click();
             }
         });
 
-        // Function to add a message to the chat window
         function addMessage(message, sender) {
             const messagesDiv = document.getElementById('messages');
             const messageDiv = document.createElement('div');
             messageDiv.classList.add('message', `${sender}-message`);
 
-            // Add sender avatar
             const img = document.createElement('img');
-            img.src = sender === 'user' ? 'static/user.png' : 'static/agent.png'; // Updated paths
+            img.src = sender === 'user' ? 'static/user.png' : 'static/agent.png';
             messageDiv.appendChild(img);
 
-            // Add message content (rendered as HTML from Markdown)
             const textDiv = document.createElement('div');
             textDiv.classList.add(sender === 'user' ? 'user-response' : 'bot-response');
-            textDiv.innerHTML = marked.parse(message); // Convert Markdown to HTML
+            textDiv.innerHTML = marked.parse(message);
             messageDiv.appendChild(textDiv);
 
-            // Append the message to the chat window
             messagesDiv.appendChild(messageDiv);
-
-            // Auto-scroll to the bottom
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
     </script>

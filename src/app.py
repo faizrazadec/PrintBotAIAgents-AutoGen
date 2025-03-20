@@ -15,6 +15,7 @@ from autogen import (
     ConversableAgent,
     register_function,
     GroupChatManager,
+    Agent,
     GroupChat
 )
 from dotenv import load_dotenv
@@ -105,18 +106,80 @@ the_human = ConversableAgent(
     human_input_mode="ALWAYS",
 )
 
+# def custom_speaker_selection_func(last_speaker: Agent, groupchat: GroupChat):
+#     """
+#     Custom function to determine the next speaker in a structured agent workflow.
+
+#     The flow:
+#     - The Human Agent always hands off to the Assistant Agent.
+#     - The Assistant Agent either continues with the Human Agent or invokes the Executor Agent if needed.
+#     - If the Executor Agent is called, the next speaker is always the Assistant Agent.
+#     - After the execution, the Assistant Agent hands control back to the Human Agent.
+
+#     Args:
+#         last_speaker (Agent): The last agent that spoke.
+#         groupchat (GroupChat): The current conversation context.
+
+#     Returns:
+#         Agent | str: The next agent to speak or a selection method.
+#     """
+#     messages = groupchat.messages
+
+#     if len(messages) <= 1:
+#         return the_human  # Start with the human agent
+
+#     if last_speaker is the_human:
+#         return assistant  # The assistant always follows the human
+
+#     elif last_speaker is assistant:
+#         if "Suggested tool call" in messages[-1]["content"]:  
+#             return executor_agent  # If execution is required, call the executor
+#         else:
+#             return the_human  # Otherwise, return to the human agent
+
+#     elif last_speaker is executor_agent:
+#         return assistant  # The executor always hands back to the assistant
+
+#     else:
+#         return "random"  # Fallback selection
+
+def custom_speaker_selection_func(last_speaker: Agent, groupchat: GroupChat):
+    """
+    Custom function to determine the next speaker in a structured agent workflow.
+    """
+    messages = groupchat.messages
+
+    # if len(messages) <= 1:
+    #     return the_human  # Start with the human agent
+
+    if last_speaker is the_human:
+        return assistant  # The assistant always follows the human
+
+    elif last_speaker is assistant:
+        # Check for tool_calls in the last assistant message
+        if messages and messages[-1].get("role") == "assistant" and messages[-1].get("tool_calls"):
+            return executor_agent  # If tool_calls are present, call the executor
+        else:
+            return the_human  # Otherwise, return to the human agent
+
+    elif last_speaker is executor_agent:
+        return assistant  # The executor always hands back to the assistant
+
+    else:
+        return "random"  # Fallback selection
+
 planning_chat = GroupChat(
     agents=[the_human, assistant, executor_agent],
     messages=[],
     max_round=40,
-    send_introductions=True,
-    speaker_selection_method="auto",
+    # send_introductions=True,
+    speaker_selection_method=custom_speaker_selection_func,
 )
 
 planning_manager = GroupChatManager(
     groupchat=planning_chat,
-    llm_config=llm_config_turbo,
-    system_message=manager_prompt,
+    llm_config=llm_config_turbo
+    # system_message=manager_prompt,
 )
 
 chat_initialized = False # pylint: disable=C0103
@@ -151,6 +214,11 @@ def handle_user_message(data):
             message=user_message,
         )
 
-
 if __name__ == "__main__":
     socket_io.run(app, debug=True)
+
+# result = the_human.initiate_chat(
+#     planning_manager,
+#     message="Hi"
+# )
+# print(result)

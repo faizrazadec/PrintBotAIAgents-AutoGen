@@ -2,18 +2,21 @@
 
 import json
 import requests
+import os
+from dotenv import load_dotenv
 
-URL_PRODUCTS = "https://api.cloudprinter.com/cloudcore/1.0/products"
+load_dotenv()
+
 URL_PRODUCT_INFO = "https://api.cloudprinter.com/cloudcore/1.0/products/info"
 
-API_KEY = "bed884d6def704a005fa85b2605dac91"
+API_KEY = os.getenv("CLOUDPRINT_API_KEY")
 
 headers = {"Content-Type": "application/json"}
 payload = json.dumps({"apikey": API_KEY})
 
-response = requests.post(URL_PRODUCTS, headers=headers, data=payload, timeout=10)
-PRODUCTS = json.loads(response.text)
-
+with open('src/products.json', "r") as f:
+    products_string = f.read()  # Read the JSON as a string
+    PRODUCTS = json.loads(products_string)  # Parse the string into a Python list of dictionaries
 
 def filter_products_by_category(category_name: str):
     """Fetches products based on the given category name."""
