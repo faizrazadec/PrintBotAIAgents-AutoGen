@@ -1,6 +1,6 @@
 # Order Management System (OMS) Agent - Autogen
 
-This project demonstrates an Order Management System powered by intelligent agents. Leveraging AG2 (formerly AutoGen), the system orchestrates a seamless workflow using a custom manager flow for multi-agent group chats. The agents collaboratively handle tasks such as processing orders, managing customer interactions, and coordinating various steps of the order lifecycle. This setup showcases the potential of agent-based systems to streamline and automate complex workflows with efficiency and intelligence.
+This project demonstrates an Order Management System powered by intelligent agents. Leveraging AG2 (formerly Autogen), the system orchestrates a seamless workflow using a custom manager flow for multi-agent group chats. The agents collaboratively handle tasks such as processing orders, managing customer interactions, and coordinating various steps of the order lifecycle. This setup showcases the potential of agent-based systems to streamline and automate complex workflows with efficiency and intelligence.
 
 ---
 
