@@ -79,8 +79,8 @@ During the implementation of agentic flows with AG2, it became evident that the 
 1.  **Clone the repository:**
 
     ```bash
-    git clone https://github.com/faizrazadec/PrintBotAIAgents-AutoGen.git
-    cd PrintBotAIAgents-AutoGen/src
+    git clone https://github.com/faizrazadec/OrderManagementSystemAgents-AutoGen.git
+    cd OrderManagementSystemAgents-AutoGen/src
     ```
 
 2.  **Create a virtual environment (recommended):**
