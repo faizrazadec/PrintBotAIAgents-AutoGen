@@ -1,8 +1,6 @@
-# Order Management System (OMS) Agent - AutoGen
+# Order Management System (OMS) Agent - Autogen
 
-<p style="text-align: justify;">
-This project demonstrates an Order Management System powered by intelligent agents. Leveraging AG2 (formerly known as AutoGen), the system orchestrates a seamless workflow using a custom manager flow for multi-agent group chats. The agents collaboratively handle tasks such as processing orders, managing customer interactions, and coordinating various steps of the order lifecycle. This setup showcases the potential of agent-based systems to streamline and automate complex workflows with efficiency and intelligence.
-</p>
+This project demonstrates an Order Management System powered by intelligent agents. Leveraging AG2 (formerly AutoGen), the system orchestrates a seamless workflow using a custom manager flow for multi-agent group chats. The agents collaboratively handle tasks such as processing orders, managing customer interactions, and coordinating various steps of the order lifecycle. This setup showcases the potential of agent-based systems to streamline and automate complex workflows with efficiency and intelligence.
 
 ---
 
@@ -64,13 +62,11 @@ The end-to-end platform for multi-agent automation. Flexible agent construction 
 
 ### Why Use AG2  
 
-<p style="text-align: justify;"> AG2 stands out for its scalability, allowing seamless integration with APIs, databases, and external tools to automate complex workflows. It provides customizable agent workflows and real-time task execution, making it reliable for handling intricate processes. Its advanced error handling ensures robust operations, while extensive documentation and an active community streamline the development experience. Whether you are building a simple chatbot or orchestrating a multi-agent system, AG2 delivers flexibility, efficiency, and ease of use. </p> 
+AG2 stands out for its scalability, allowing seamless integration with APIs, databases, and external tools to automate complex workflows. It provides customizable agent workflows and real-time task execution, making it reliable for handling intricate processes. Its advanced error handling ensures robust operations, while extensive documentation and an active community streamline the development experience. Whether you are building a simple chatbot or orchestrating a multi-agent system, AG2 delivers flexibility, efficiency, and ease of use.
 
 ### Use of Socket.IO (Limitations in AG2)
 
-<p style="text-align: justify;">  
 During the implementation of agentic flows with AG2, it became evident that the platform lacks a streaming option for real-time conversation updates. This limitation prevents extracting agent conversations and human inputs for display in a user interface. To address this, the `_print_received_message` function was customized and integrated with Socket.IO, enabling seamless real-time updates of conversations in the UI.  
-</p>  
 
 ## Setup and Installation
 
