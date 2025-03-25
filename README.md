@@ -49,6 +49,7 @@ PrintBotAIAgents-AutoGen/
 
 ### APIs and Models  
 - **OpenAI API**: Integrates GPT-based language models to power natural language understanding and task execution.  
+- **CloudPrinter API**: The core API microservice for placing orders, requesting product lists, requesting status and more.
 
 ### Frontend  
 - **HTML/CSS**: Templates for the user interface.  
@@ -67,6 +68,16 @@ AG2 stands out for its scalability, allowing seamless integration with APIs, dat
 ### Use of Socket.IO (Limitations in AG2)
 
 During the implementation of agentic flows with AG2, it became evident that the platform lacks a streaming option for real-time conversation updates. This limitation prevents extracting agent conversations and human inputs for display in a user interface. To address this, the `_print_received_message` function was customized and integrated with Socket.IO, enabling seamless real-time updates of conversations in the UI.  
+
+### CloudPrinter Integration
+
+Cloudprinter.com provides a versatile platform with seamless one-click integrations for popular marketplaces, shop systems, and e-commerce solutions, enabling instant printing services. For our project, we leveraged the **`List all products`** API to fetch a comprehensive catalog of products, including: 
+
+**Roll-up Banners, Flyers, Letterheads, Drinkware, Wall Decorations, Clothing and Accessories, Cards, Textbooks (FC and BW), Home & Accessories, Folded Brochures, Promotional Items, Photo Prints, Card Sets, Posters, Stickers, Magazines, Envelopes, Photobooks, Puzzles, Calendars, and Business Cards.**
+
+Additionally, we utilized the **`Product Info`** API to retrieve detailed information for specific products to ensure accurate order management and workflow precision. 
+
+To explore more about the Cloudprinter API, visit their [official website](https://www.cloudprinter.com).
 
 ## Setup and Installation
 
