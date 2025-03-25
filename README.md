@@ -134,6 +134,8 @@ During the implementation of agentic flows with AG2, it became evident that the 
   <img src="data/use_case_2.png" alt="Use Case 2" />
 </p>
 
+---
+
 <!-- ## Usage
 
 -   Open the web application in your browser.
