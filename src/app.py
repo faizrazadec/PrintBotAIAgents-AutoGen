@@ -21,7 +21,7 @@ from autogen import (
 from dotenv import load_dotenv
 
 from prompts import (
-    assistant_prompt
+    system_prompt_assistant
 )
 from functions import (
     filter_products_by_category,
@@ -69,7 +69,7 @@ executor_agent = ConversableAgent(
 assistant = ConversableAgent(
     name="assistant_agent",
     llm_config=llm_config,
-    system_message=assistant_prompt,
+    system_message=system_prompt_assistant,
     human_input_mode="NEVER",
     functions=[filter_products_by_category, get_product_info_by_reference],
 )
