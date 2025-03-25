@@ -60,9 +60,7 @@ PrintBotAIAgents-AutoGen/
 
 ## AG2 (formly Autogen)
 
-<p style="text-align: justify;">
-The end-to-end platform for multi-agent automation. Flexible agent construction and orchestration. Create specialized agents that work together seamlessly. TO learn more about AG2, visit AG2 official ![docs](https://docs.ag2.ai/docs/home/home)
-</p>
+The end-to-end platform for multi-agent automation. Flexible agent construction and orchestration. Create specialized agents that work together seamlessly. TO learn more about AG2, visit AG2 official [docs](https://docs.ag2.ai/docs/home/home).
 
 ### Why Use AG2  
 
