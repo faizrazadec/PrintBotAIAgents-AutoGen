@@ -75,7 +75,7 @@ Cloudprinter.com provides a versatile platform with seamless one-click integrati
 
 **Roll-up Banners, Flyers, Letterheads, Drinkware, Wall Decorations, Clothing and Accessories, Cards, Textbooks (FC and BW), Home & Accessories, Folded Brochures, Promotional Items, Photo Prints, Card Sets, Posters, Stickers, Magazines, Envelopes, Photobooks, Puzzles, Calendars, and Business Cards.**
 
-Additionally, we utilized the **`Product Info`** API to retrieve detailed information for specific products to ensure accurate order management and workflow precision. 
+Additionally, we utilized the **`Product Info`** API to retrieve detailed information for specific products to ensure accurate order management and workflow precision and **`Order Quote`** API to retrieve the pricing information for the specific product.
 
 To explore more about the Cloudprinter API, visit their [official website](https://www.cloudprinter.com).
 
