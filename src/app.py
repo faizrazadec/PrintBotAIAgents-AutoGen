@@ -25,7 +25,8 @@ from prompts import (
 )
 from functions import (
     filter_products_by_category,
-    get_product_info_by_reference
+    get_product_info_by_reference,
+    fetch_pricing_info
 )
 from logger import setup_logger
 
@@ -71,7 +72,7 @@ assistant = ConversableAgent(
     llm_config=llm_config,
     system_message=system_prompt_assistant,
     human_input_mode="NEVER",
-    functions=[filter_products_by_category, get_product_info_by_reference],
+    functions=[filter_products_by_category, get_product_info_by_reference, fetch_pricing_info],
 )
 
 register_function(
@@ -86,6 +87,13 @@ register_function(
     caller=assistant,
     executor=executor_agent,
     description="Gets detailed information about a product using its reference and return to the assistant agent.",
+)
+
+register_function(
+    fetch_pricing_info,
+    caller=assistant,
+    executor=executor_agent,
+    description="Fetches pricing information for a product by utilizing customer-provided details such as country, quantity, and options, along with product reference. Returns detailed pricing information to the assistant agent for customer communication.",
 )
 
 the_human = ConversableAgent(

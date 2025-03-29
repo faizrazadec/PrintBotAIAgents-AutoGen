@@ -8,3 +8,5 @@ src/main.py
 srccc
 *.json
 test.py
+test2.py
+test.json
