@@ -81,6 +81,8 @@ To explore more about the Cloudprinter API, visit their [official website](https
 
 ## Setup and Installation
 
+This project use `uv` as it's package manager instead of traditional `pip`. Learn more about [uv](https://docs.astral.sh/uv/)
+
 1.  **Clone the repository:**
 
     ```bash
@@ -91,15 +93,13 @@ To explore more about the Cloudprinter API, visit their [official website](https
 2.  **Create a virtual environment (recommended):**
 
     ```bash
-    python3 -m venv .venv
-    source .venv/bin/activate  # On Linux/macOS
-    .venv\Scripts\activate  # On Windows
+    uv venv
     ```
 
 3.  **Install dependencies:**
 
     ```bash
-    pip install -r requirements.txt
+    uv pip install -r pyproject.toml
     ```
 
 4.  **Set up environment variables:**
@@ -108,9 +108,13 @@ To explore more about the Cloudprinter API, visit their [official website](https
     -   Add your OpenAI and Cloudprinter API keys:
 
         ```
+        CLOUDPRINT_API_KEY=your_cloudprint_api_key
         OPENAI_API_KEY=your_openai_api_key
-        CLOUDPRINTER_API_KEY=your_cloudprinter_api_key
+
+        LANGSMITH_TRACING='true'
+        LANGSMITH_ENDPOINT="https://api.smith.langchain.com"
         LANGSMITH_API_KEY=your_langsmith_api_key
+        LANGSMITH_PROJECT=your_project_name
         ```
 
 ## Running the Application
