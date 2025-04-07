@@ -1,0 +1,12 @@
+[project]
+name = "ordermanagementsystemagents-autogen"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "ag2[openai]>=0.8.5",
+    "autogen>=0.8.5",
+    "flask>=3.1.0",
+    "flask-socketio>=5.5.1",
+]
