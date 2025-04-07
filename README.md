@@ -7,7 +7,7 @@ This project demonstrates an Order Management System powered by intelligent agen
 ## Prerequisites
 
 -   Python 3.12 or above
--   pip
+-   uv
 -   An OpenAI API key
 -   A Cloudprinter API key
 -   LangSmith API Key
@@ -122,7 +122,7 @@ This project use `uv` as it's package manager instead of traditional `pip`. Lear
 1.  **Start the Flask application:**
 
     ```bash
-    python app.py
+    uv run /path/to/file/app.py
     ```
 
 2.  **Open `index.html` in your browser:**
