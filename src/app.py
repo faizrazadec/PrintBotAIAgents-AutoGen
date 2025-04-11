@@ -1,11 +1,17 @@
 """This module implements a Flask application with AutoGen and Socket.IO for real-time chat."""
 
 import os
+import json
+from urllib.parse import urlencode
+import requests
 from typing import Union, Any
 
 from flask import (
     Flask, 
-    render_template
+    render_template,
+    request,
+    jsonify,
+    render_template_string
 )
 from flask_socketio import (
     SocketIO,
@@ -26,14 +32,103 @@ from prompts import (
 from functions import (
     filter_products_by_category,
     get_product_info_by_reference,
-    fetch_pricing_info
+    fetch_pricing_info,
+    create_order
 )
 from logger import setup_logger
 
 load_dotenv()
 logger = setup_logger()
 app = Flask(__name__)
+app.secret_key = os.urandom(24)  # Required for session
 socket_io = SocketIO(app, cors_allowed_origins="*")
+
+# OAuth Configuration
+CLIENT_ID = "сhatbot_testing"
+CLIENT_SECRET = "c39e7fafcbbede1d85bb695ab628aa61" 
+REDIRECT_URI = "http://127.0.0.1:5000"  # No /callback path
+STATE = "1"  # In production, use a random string for security
+SCOPE = "read-write"  # Or "read" depending on your needs
+RESPONSE_TYPE = "code"
+
+# Authorization URL
+auth_url = "https://api.cloudprinter.com/cloudauth/1.0/oauth2/authorize"
+token_url = "https://api.cloudprinter.com/cloudauth/1.0/oauth2/token"
+
+# Global variable to store token data
+token_data = None
+
+# HTML template for auth popup
+AUTH_POPUP_TEMPLATE = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cloudprinter.com Authorization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 2s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h2>Redirecting to Cloudprinter.com</h2>
+    <p>Please wait while we redirect you to the authorization page...</p>
+    <div class="loader"></div>
+    
+    <script>
+        // Redirect to the authorization URL
+        window.location.href = "{{ auth_url|safe }}";
+    </script>
+</body>
+</html>
+"""
+
+# HTML template for oauth return page
+OAUTH_RETURN_TEMPLATE = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Authorization Complete</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        .success {
+            color: #4CAF50;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <h2 class="success">Authorization Successful!</h2>
+    <p>You can close this window now. Returning to the main application...
+    
+    <script>
+        // Close this window after a brief delay
+        setTimeout(function() {
+            window.close();
+        }, 2000);
+    </script>
+</body>
+</html>
+"""
 
 def new_print_received_message(self, message: Union[dict[str, Any], str], sender):
     """Patches the GroupChatManager to emit messages via Socket.IO."""
@@ -49,7 +144,7 @@ def new_print_received_message(self, message: Union[dict[str, Any], str], sender
     print(f"PATCHED: Sender={sender.name}, Content={message_content}")
     socket_io.emit("message", {"sender": sender.name, "content": message_content})
 
-GroupChatManager._print_received_message = new_print_received_message   # pylint: disable=W0212
+GroupChatManager._print_received_message = new_print_received_message
 
 llm_config = {
     "config_list": [
@@ -72,7 +167,7 @@ assistant = ConversableAgent(
     llm_config=llm_config,
     system_message=system_prompt_assistant,
     human_input_mode="NEVER",
-    functions=[filter_products_by_category, get_product_info_by_reference, fetch_pricing_info],
+    functions=[filter_products_by_category, get_product_info_by_reference, fetch_pricing_info, create_order],
 )
 
 register_function(
@@ -94,6 +189,13 @@ register_function(
     caller=assistant,
     executor=executor_agent,
     description="Fetches pricing information for a product by utilizing customer-provided details such as country, quantity, and options, along with product reference. Returns detailed pricing information to the assistant agent for customer communication.",
+)
+
+register_function(
+    create_order,
+    caller=assistant,
+    executor=executor_agent,
+    description="Submits a print order to the Cloudprinter API using the provided customer email, address, and item details. Returns the API response for order creation.",
 )
 
 the_human = ConversableAgent(
@@ -126,7 +228,7 @@ def custom_speaker_selection_func(last_speaker: Agent, groupchat: GroupChat):
 planning_chat = GroupChat(
     agents=[the_human, assistant, executor_agent],
     messages=[],
-    max_round=40,
+    # max_round=40,
     speaker_selection_method=custom_speaker_selection_func,
 )
 
@@ -134,13 +236,91 @@ planning_manager = GroupChatManager(
     groupchat=planning_chat,
 )
 
-chat_initialized = False # pylint: disable=C0103
+chat_initialized = False
 
 
 @app.route("/")
 def index():
     """Renders the index.html template."""
-    return render_template("index.html")
+    # Check if this is a callback from OAuth provider
+    code = request.args.get('code')
+    state = request.args.get('state')
+    
+    if code and state:
+        # This is a callback from OAuth
+        return handle_oauth_callback(code, state)
+    else:
+        # This is a normal visit to the index page
+        return render_template("index.html")
+    
+    
+def handle_oauth_callback(code, state):
+    """Process the OAuth callback parameters"""
+    global token_data
+    
+    if state != STATE:
+        return "State mismatch. Possible CSRF attack."
+    
+    # Exchange the authorization code for an access token
+    token_payload = {
+        "code": code,
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "redirect_uri": REDIRECT_URI,
+        "grant_type": "authorization_code"
+    }
+    
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
+    
+    token_response = requests.post(token_url, data=token_payload, headers=headers)
+    logger.info(f"Token response: {token_response.text}")
+    
+    if token_response.status_code == 200:
+        # Store the token data
+        token_data = token_response.json()
+        
+        # Store token info in a file (optional)
+        with open('cloudprinter_token.json', 'w') as f:
+            json.dump(token_data, f)
+            
+        return render_template_string(OAUTH_RETURN_TEMPLATE)
+    else:
+        return f"Error exchanging code for token: {token_response.text}"
+    
+    
+@app.route('/auth')
+def auth():
+    """Display the auth popup that redirects to Cloudprinter"""
+    # Prepare the authorization URL
+    params = {
+        "client_id": CLIENT_ID,
+        "redirect_uri": REDIRECT_URI,
+        "state": STATE,
+        "scope": SCOPE,
+        "response_type": RESPONSE_TYPE,
+    }
+    authorization_url = f"{auth_url}?{urlencode(params)}"
+    logger.info(f"Authorization URL: {authorization_url}")
+    
+    return render_template_string(AUTH_POPUP_TEMPLATE, auth_url=authorization_url)
+
+
+@app.route('/check_token')
+def check_token():
+    """Endpoint for the main page to check if authentication is complete"""
+    global token_data
+    
+    if token_data:
+        return jsonify({
+            "authenticated": True,
+            "access_token": token_data.get('access_token'),
+            "refresh_token": token_data.get('refresh_token', None),
+            "expires_in": token_data.get('expires_in', None)
+        })
+    else:
+        return jsonify({"authenticated": False})
 
 
 @socket_io.on("user_message")

@@ -17,11 +17,66 @@
             height: 100vh;
         }
         #header {
-            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             background-color: #007bff;
             color: white;
             padding: 15px;
             font-size: 1.5rem;
+        }
+        #header-title {
+            text-align: center;
+            flex-grow: 1;
+        }
+        #login-btn {
+            background-color: #45a049;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        #login-btn:hover {
+            background-color: #3d8b3d;
+        }
+        #login-btn.logged-in {
+            background-color: #28a745;
+            cursor: default;
+        }
+        .auth-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .auth-modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 5px;
+            width: 300px;
+            text-align: center;
+        }
+        .token-info {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            text-align: left;
+            font-size: 0.8rem;
+            display: none;
+        }
+        .token-field {
+            word-break: break-all;
+            margin-bottom: 5px;
         }
         #chat-container {
             flex: 1;
@@ -99,7 +154,23 @@
     </style>
 </head>
 <body>
-    <div id="header">CloudPrinter Quotation Generation</div>
+    <div id="header">
+        <div id="header-title">CloudPrinter Quotation Generation</div>
+        <button id="login-btn">Login</button>
+    </div>
+
+    <div class="auth-modal" id="auth-modal">
+        <div class="auth-modal-content">
+            <h3>Authentication Success</h3>
+            <p>You are now logged in to CloudPrinter!</p>
+            <div class="token-info" id="token-info">
+                <div class="token-field"><strong>Access Token:</strong> <span id="access-token">None</span></div>
+                <div class="token-field"><strong>Expires In:</strong> <span id="expires-in">None</span></div>
+            </div>
+            <button id="close-auth-modal">Close</button>
+        </div>
+    </div>
+
     <div id="chat-container">
         <div id="messages"></div>
         <div id="input-container">
@@ -109,10 +180,93 @@
     </div>
     <script>
         const socket = io();
+        let authToken = null;
 
         window.onload = () => {
             addMessage("What can I help you with today?", "bot");
+
+        // Check if we're already authenticated
+        fetch('/check_token')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.authenticated) {
+                        authToken = data.access_token;
+                        updateLoginButton(true);
+                    }
+                })
+                .catch(error => console.error('Error checking token:', error));
         };
+
+        document.getElementById('login-btn').addEventListener('click', function() {
+            if (!authToken) {
+                startOAuth();
+            }
+        });
+
+        document.getElementById('close-auth-modal').addEventListener('click', function() {
+            document.getElementById('auth-modal').style.display = 'none';
+        });
+
+        function startOAuth() {
+            // Open popup window for authentication
+            var width = 600;
+            var height = 700;
+            var left = (screen.width/2)-(width/2);
+            var top = (screen.height/2)-(height/2);
+            
+            var authWindow = window.open(
+                "/auth", 
+                "CloudprinterAuth",
+                `width=${width},height=${height},left=${left},top=${top}`
+            );
+            
+            // Poll for token data
+            var checkInterval = setInterval(function() {
+                fetch('/check_token')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.authenticated) {
+                            clearInterval(checkInterval);
+                            // Update authentication state
+                            authToken = data.access_token;
+                            updateLoginButton(true);
+                            
+                            // Show success modal
+                            document.getElementById('access-token').textContent = 
+                                data.access_token.substring(0, 10) + '...';
+                            document.getElementById('expires-in').textContent = 
+                                data.expires_in || 'Not provided';
+                            document.getElementById('token-info').style.display = 'block';
+                            document.getElementById('auth-modal').style.display = 'block';
+                            
+                            // Close the popup
+                            if (authWindow && !authWindow.closed) {
+                                authWindow.close();
+                            }
+                        }
+                    })
+                    .catch(error => console.error('Error checking token:', error));
+            }, 1000);
+            
+            // Backup check in case the popup is closed before authentication
+            var popupCheckInterval = setInterval(function() {
+                if (authWindow && authWindow.closed) {
+                    clearInterval(popupCheckInterval);
+                    clearInterval(checkInterval);
+                }
+            }, 500);
+        }
+
+        function updateLoginButton(isLoggedIn) {
+            const loginBtn = document.getElementById('login-btn');
+            if (isLoggedIn) {
+                loginBtn.textContent = "Logged In";
+                loginBtn.classList.add('logged-in');
+            } else {
+                loginBtn.textContent = "Login";
+                loginBtn.classList.remove('logged-in');
+            }
+        }
 
         socket.on('message', function(data) {
             addMessage(data.content, data.sender === 'the_human' ? 'user' : 'bot');
