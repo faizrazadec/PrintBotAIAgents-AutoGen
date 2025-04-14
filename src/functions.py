@@ -24,6 +24,37 @@ with open('src/products.json', "r") as f:
     products_string = f.read()  # Read the JSON as a string
     PRODUCTS = json.loads(products_string)  # Parse the string into a Python list of dictionaries
 
+# Token manager to store and manage the OAuth token
+class TokenManager:
+    _instance = None
+    _access_token = None
+    
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            cls._instance = TokenManager()
+        return cls._instance
+    
+    def set_token(self, token):
+        """Set the OAuth access token"""
+        self._access_token = token
+        logging.info("OAuth token set successfully")
+    
+    def get_token(self):
+        """Get the current OAuth access token"""
+        return self._access_token
+    
+    def get_auth_header(self):
+        """Get the Authorization header with bearer token if available"""
+        if self._access_token:
+            return {'Authorization': f'Bearer {self._access_token}'}
+        # Fall back to API key if no OAuth token is available
+        logging.warning("No OAuth token available, using API key as fallback")
+        return {}
+
+# Create a singleton instance
+token_manager = TokenManager.get_instance()
+
 def filter_products_by_category(category_name: str):
     """Fetches products based on the given category name."""
     try:
@@ -142,6 +173,7 @@ def create_order(email: str, addresses: list, items: list, unii = str(id)):
 
     Returns:
         requests.Response: The raw response from Cloudprinter. Use `.json()` to parse.
+        Or dict with error message if user is not logged in.
 
     Example:
         create_order(
@@ -183,7 +215,7 @@ def create_order(email: str, addresses: list, items: list, unii = str(id)):
             }]
         )
     """
-
+    
     url = "https://api.cloudprinter.com/cloudapps/1.0/orders/add"
 
     payload = {
@@ -196,13 +228,28 @@ def create_order(email: str, addresses: list, items: list, unii = str(id)):
 
     headers = {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer afdaefa5af4439f622395592ca07050a55c4d085',
     }
+    
+    # Get authorization header from token manager
+    auth_header = token_manager.get_auth_header()
+    if not auth_header:
+        # Instead of using fallback token, return an authentication error
+        error_message = "Authentication required: Please log in with your Cloudprinter account to create an order."
+        logging.warning("Order creation attempted without authentication")
+        return {"error": "authentication_required", "message": error_message}
+    else:
+        # Use the dynamic token from OAuth login
+        headers.update(auth_header)
+        logging.info("Using dynamically generated OAuth token")
 
     try:
         response = requests.post(url, headers=headers, json=payload, timeout=10)
+        # Log the response status for debugging
+        logging.info(f"Order creation response status: {response.status_code}")
+        if response.status_code >= 400:
+            logging.error(f"Order creation failed: {response.text}")
         return response.text
 
     except requests.exceptions.RequestException as e:
-        print(f"ERROR: create_order failed: {e}")
+        logging.error(f"ERROR: create_order failed: {e}")
         return {"error": f"Network error: {e}"}

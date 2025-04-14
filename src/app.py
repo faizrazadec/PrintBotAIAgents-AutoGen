@@ -281,6 +281,11 @@ def handle_oauth_callback(code, state):
         # Store the token data
         token_data = token_response.json()
         
+        # Store token in the token manager for API calls
+        from functions import token_manager
+        token_manager.set_token(token_data.get('access_token'))
+        logger.info("Token successfully stored in token manager")
+        
         # Store token info in a file (optional)
         with open('cloudprinter_token.json', 'w') as f:
             json.dump(token_data, f)
