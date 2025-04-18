@@ -6,6 +6,7 @@
     <title>CloudPrinter Quotation Generation</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/5.1.1/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -18,7 +19,7 @@
         }
         #header {
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
             background-color: #007bff;
             color: white;
@@ -151,12 +152,49 @@
         #send-button:hover {
             background-color: #0056b3;
         }
+        #upload-button {
+            padding: 10px 12px;
+            margin-left: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+        }
+        #upload-button:hover {
+            background-color: #218838;
+        }
+        #file-input {
+            display: none;
+        }
+        .file-info {
+            margin-top: 5px;
+            font-size: 0.85rem;
+            color: #555;
+        }
+        .upload-success {
+            color: #28a745;
+            margin-top: 5px;
+            font-size: 0.85rem;
+        }
+        #chat-login-btn {
+            padding: 10px 15px;
+            margin-left: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #45a049;
+            color: white;
+            cursor: pointer;
+            display: none; /* Hidden by default */
+        }
+        #chat-login-btn:hover {
+            background-color: #3d8b3d;
+        }
     </style>
 </head>
 <body>
     <div id="header">
         <div id="header-title">CloudPrinter Quotation Generation</div>
-        <button id="login-btn">Login</button>
     </div>
 
     <div class="auth-modal" id="auth-modal">
@@ -173,14 +211,20 @@
 
     <div id="chat-container">
         <div id="messages"></div>
+        <div class="file-info" id="file-info"></div>
         <div id="input-container">
             <input type="text" id="user-input" placeholder="Type a message..." />
+            <button id="upload-button" title="Upload PDF"><i class="fas fa-plus"></i></button>
+            <input type="file" id="file-input" accept=".pdf" />
+            <button id="chat-login-btn">Login</button>
             <button id="send-button">Send</button>
         </div>
     </div>
     <script>
         const socket = io();
         let authToken = null;
+        let uploadedFilePath = null;
+        let loginSuggested = false;
 
         window.onload = () => {
             addMessage("What can I help you with today?", "bot");
@@ -197,7 +241,7 @@
                 .catch(error => console.error('Error checking token:', error));
         };
 
-        document.getElementById('login-btn').addEventListener('click', function() {
+        document.getElementById('chat-login-btn').addEventListener('click', function() {
             if (!authToken) {
                 startOAuth();
             }
@@ -205,6 +249,47 @@
 
         document.getElementById('close-auth-modal').addEventListener('click', function() {
             document.getElementById('auth-modal').style.display = 'none';
+        });
+
+        // Handle file upload button click
+        document.getElementById('upload-button').addEventListener('click', function() {
+            document.getElementById('file-input').click();
+        });
+
+        // Handle file selection
+        document.getElementById('file-input').addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                if (file.type !== 'application/pdf') {
+                    alert('Please select a PDF file.');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.file_path) {
+                        uploadedFilePath = data.file_path;
+                        document.getElementById('file-info').innerHTML = 
+                            `<div class="upload-success">File uploaded: ${file.name}</div>`;
+                        // Auto-send message to bot that user is logged in
+                        socket.emit('user_message', { 
+                        message: "File Uploaded Successfully.",
+                        is_system_message: true
+                    });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while uploading the file.');
+                });
+            }
         });
 
         function startOAuth() {
@@ -239,6 +324,12 @@
                             document.getElementById('token-info').style.display = 'block';
                             document.getElementById('auth-modal').style.display = 'block';
                             
+                            // Auto-send message to bot that user is logged in
+                            socket.emit('user_message', { 
+                                message: "Logged In Successfully.",
+                                is_system_message: true
+                            });
+                            
                             // Close the popup
                             if (authWindow && !authWindow.closed) {
                                 authWindow.close();
@@ -258,18 +349,30 @@
         }
 
         function updateLoginButton(isLoggedIn) {
-            const loginBtn = document.getElementById('login-btn');
+            const chatLoginBtn = document.getElementById('chat-login-btn');
+            
             if (isLoggedIn) {
-                loginBtn.textContent = "Logged In";
-                loginBtn.classList.add('logged-in');
+                chatLoginBtn.style.display = 'none';
+                loginSuggested = false;
             } else {
-                loginBtn.textContent = "Login";
-                loginBtn.classList.remove('logged-in');
+                // Only show the chat login button if login was suggested in the conversation
+                if (loginSuggested) {
+                    chatLoginBtn.style.display = 'block';
+                }
             }
         }
 
         socket.on('message', function(data) {
-            addMessage(data.content, data.sender === 'the_human' ? 'user' : 'bot');
+            const content = data.content;
+            addMessage(content, data.sender === 'the_human' ? 'user' : 'bot');
+            
+            // Check if the message requires login
+            if (data.sender !== 'the_human' && data.login_required === true) {
+                loginSuggested = true;
+                if (!authToken) { // Only show if not already logged in
+                    document.getElementById('chat-login-btn').style.display = 'block';
+                }
+            }
         });
 
         document.getElementById('send-button').onclick = function() {

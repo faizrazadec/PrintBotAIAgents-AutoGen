@@ -6,9 +6,13 @@ import os
 import uuid
 from dotenv import load_dotenv
 from logger import setup_logger
+import hashlib
 
 load_dotenv()
 logging = setup_logger()
+
+# Variable to store uploaded PDF file path
+uploaded_file_path = None
 
 URL_PRODUCT_INFO = "https://api.cloudprinter.com/cloudcore/1.0/products/info"
 URL_QUOTE = "https://api.cloudprinter.com/cloudcore/1.0/orders/quote"
@@ -23,6 +27,19 @@ id = str(uuid.uuid4())
 with open('src/products.json', "r") as f:
     products_string = f.read()  # Read the JSON as a string
     PRODUCTS = json.loads(products_string)  # Parse the string into a Python list of dictionaries
+
+# Function to set the uploaded file path
+def set_uploaded_file_path(path):
+    """Set the path of the uploaded PDF file."""
+    global uploaded_file_path
+    uploaded_file_path = path
+    logging.info(f"Uploaded file path set to: {path}")
+    return {"success": True, "path": path}
+
+# Function to get the uploaded file path
+def get_uploaded_file_path():
+    """Get the path of the uploaded PDF file."""
+    return uploaded_file_path
 
 # Token manager to store and manage the OAuth token
 class TokenManager:
@@ -217,6 +234,32 @@ def create_order(email: str, addresses: list, items: list, unii = str(id)):
     """
     
     url = "https://api.cloudprinter.com/cloudapps/1.0/orders/add"
+    
+    print("Before", items)
+
+    def calculate_md5(file_path):
+        hash_md5 = hashlib.md5()
+        with open(file_path, "rb") as f:
+            # Read file in chunks to avoid memory issues with large files
+            for chunk in iter(lambda: f.read(4096), b""):
+                hash_md5.update(chunk)
+        return hash_md5.hexdigest()
+    
+    if uploaded_file_path is None:
+        # If no file is uploaded, return an error message
+        error_message = "No file uploaded. Please upload a PDF file to create an order."
+        logging.warning("Order creation attempted without uploaded file")
+        return {"error": "file_not_uploaded", "message": error_message}
+    else:
+        # Update the URL
+        for item in items:
+            for file in item["files"]:
+                if file["type"] == "product":
+                    file["url"] = "/home/faizraza/Projects/OrderManagementSystemAgents-AutoGen/"+uploaded_file_path
+                    file["md5sum"] = calculate_md5(file["url"])
+                    
+        print("After", items)
+        logging.info(f"File URL updated to: {uploaded_file_path}")
 
     payload = {
         "reference": unii,

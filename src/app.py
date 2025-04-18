@@ -5,6 +5,8 @@ import json
 from urllib.parse import urlencode
 import requests
 from typing import Union, Any
+import uuid
+from werkzeug.utils import secure_filename
 
 from flask import (
     Flask, 
@@ -33,7 +35,8 @@ from functions import (
     filter_products_by_category,
     get_product_info_by_reference,
     fetch_pricing_info,
-    create_order
+    create_order,
+    set_uploaded_file_path
 )
 from logger import setup_logger
 
@@ -42,6 +45,18 @@ logger = setup_logger()
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Required for session
 socket_io = SocketIO(app, cors_allowed_origins="*")
+
+# Configuration for file uploads
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'pdf'}
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # OAuth Configuration
 CLIENT_ID = "сhatbot_testing"
@@ -142,7 +157,22 @@ def new_print_received_message(self, message: Union[dict[str, Any], str], sender
         return
 
     print(f"PATCHED: Sender={sender.name}, Content={message_content}")
-    socket_io.emit("message", {"sender": sender.name, "content": message_content})
+    
+    # Flag authentication-related messages
+    login_trigger = False
+    auth_keywords = ['login', 'log in', 'not logged in', 'authentication required', 'need to authenticate']
+    
+    if sender.name != "the_human" and message_content:
+        for keyword in auth_keywords:
+            if keyword.lower() in message_content.lower():
+                login_trigger = True
+                break
+    
+    socket_io.emit("message", {
+        "sender": sender.name, 
+        "content": message_content,
+        "login_required": login_trigger
+    })
 
 GroupChatManager._print_received_message = new_print_received_message
 
@@ -150,7 +180,7 @@ llm_config = {
     "config_list": [
         {
             "api_type": "openai",
-            "model": "gpt-4o-mini",
+            "model": "gpt-4o",
             "api_key": os.getenv("OPENAI_API_KEY"),
         }
     ],
@@ -326,6 +356,28 @@ def check_token():
         })
     else:
         return jsonify({"authenticated": False})
+
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    """Handles file uploads."""
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part in the request"}), 400
+
+    file = request.files['file']
+
+    if file.filename == '':
+        return jsonify({"error": "No file selected for uploading"}), 400
+
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        unique_filename = f"{uuid.uuid4()}_{filename}"
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        file.save(file_path)
+        set_uploaded_file_path(file_path)
+        return jsonify({"message": "File successfully uploaded", "file_path": file_path}), 201
+    else:
+        return jsonify({"error": "Allowed file types are pdf"}), 400
 
 
 @socket_io.on("user_message")
