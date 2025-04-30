@@ -16,6 +16,7 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
+            overflow: hidden; /* Prevent body scrolling */
         }
         #header {
             display: flex;
@@ -25,6 +26,9 @@
             color: white;
             padding: 15px;
             font-size: 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
         #header-title {
             text-align: center;
@@ -87,16 +91,19 @@
             max-width: 800px;
             margin: auto;
             width: 100%;
-            height: 100%;
+            height: calc(100vh - 70px); /* Subtract header height */
             padding: 10px;
+            box-sizing: border-box;
+            overflow: hidden; /* Prevent chat container from scrolling */
         }
         #messages {
             flex: 1;
-            overflow-y: auto;
+            overflow-y: auto; /* Only the messages area scrolls */
             border: 1px solid #ccc;
             padding: 10px;
             background-color: #fff;
             border-radius: 5px;
+            margin-bottom: 10px;
         }
         .message {
             display: flex;
@@ -133,6 +140,9 @@
             padding: 10px;
             background-color: white;
             border-top: 1px solid #ccc;
+            position: sticky;
+            bottom: 0;
+            z-index: 100;
         }
         #user-input {
             flex: 1;
@@ -225,6 +235,7 @@
         let authToken = null;
         let uploadedFilePath = null;
         let loginSuggested = false;
+        let botResponding = false; // Track if bot is currently responding
 
         window.onload = () => {
             addMessage("What can I help you with today?", "bot");
@@ -240,6 +251,27 @@
                 })
                 .catch(error => console.error('Error checking token:', error));
         };
+
+        // Function to toggle input controls based on bot response status
+        function toggleInputControls(disable) {
+            const userInput = document.getElementById('user-input');
+            const sendButton = document.getElementById('send-button');
+            const uploadButton = document.getElementById('upload-button');
+            
+            userInput.disabled = disable;
+            sendButton.disabled = disable;
+            uploadButton.disabled = disable;
+            
+            if (disable) {
+                userInput.placeholder = "Waiting for response...";
+                sendButton.style.opacity = "0.6";
+                uploadButton.style.opacity = "0.6";
+            } else {
+                userInput.placeholder = "Type a message...";
+                sendButton.style.opacity = "1";
+                uploadButton.style.opacity = "1";
+            }
+        }
 
         document.getElementById('chat-login-btn').addEventListener('click', function() {
             if (!authToken) {
@@ -366,6 +398,12 @@
             const content = data.content;
             addMessage(content, data.sender === 'the_human' ? 'user' : 'bot');
             
+            // Re-enable input controls when receiving a bot response
+            if (data.sender !== 'the_human' && botResponding) {
+                botResponding = false;
+                toggleInputControls(false);
+            }
+            
             // Check if the message requires login
             if (data.sender !== 'the_human' && data.login_required === true) {
                 loginSuggested = true;
@@ -381,6 +419,10 @@
             if (message) {
                 socket.emit('user_message', { message: message });
                 input.value = '';
+                
+                // Disable input controls while waiting for bot response
+                botResponding = true;
+                toggleInputControls(true);
             }
         };
 
